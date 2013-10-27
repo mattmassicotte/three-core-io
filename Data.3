@@ -1,0 +1,20 @@
+include "stdlib.h"
+
+namespace Core::IO
+
+    public
+    struct Data
+        *Void buffer
+        Natural size
+    end
+
+    def data_create(*Void buffer, Natural size; *Data)
+        *Data data = malloc(sizeof(Data))
+
+        data->buffer = buffer
+        data->size = size
+
+        return data
+    end
+
+end

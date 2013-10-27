@@ -1,0 +1,65 @@
+include "stdlib.h"
+include "stdio.h"
+include "unistd.h"
+
+import Core::Event::Source
+
+public
+import Data
+
+namespace Core::IO
+    public
+    enum Type
+        Stream
+        RandomAccess
+    end
+
+    public
+    struct Channel
+        Type type
+        Natural descriptor
+        *Core::Event::Source read_source
+        *{*Core::IO::Data data} read_closure_ptr
+    end
+
+    def channel_create(Type type, Natural descriptor; *Channel)
+        *Channel channel = malloc(sizeof(Channel))
+
+        channel->type = type
+        channel->descriptor = descriptor
+        channel->read_source = Core::Event::source_create(Core::Event::Type::Read, descriptor)
+
+        return channel
+    end
+
+    def Channel.close()
+    end
+
+    def Channel.read(Int offset, Natural length, {*Core::IO::Data data} handler)
+        self->read_closure_ptr = three_closure_copy(handler)
+
+        self->read_source.set_handler(do (Natural descriptor, Natural data) {
+            printf("Handler invoked with %u %u\n", descriptor, data)
+            *Char buffer = malloc(data + 1)
+            printf("Malloced buffer %p\n", buffer)
+            ssize_t bytes_read = read(descriptor, buffer, data)
+
+            if bytes_read <= 0
+                printf("failed to read?\n")
+                return
+            end
+
+            *Core::IO::Data data_obj = Core::IO::data_create(buffer, bytes_read)
+
+            printf("About to invoke closure %p\n", self)
+            (*self->read_closure_ptr)(data_obj)
+
+            buffer[bytes_read] = 0 // null-terminate the string
+
+            printf("read: %s\n", buffer)
+        })
+    end
+
+    def Channel.write(Int offset, *Core::IO::Data data, {} handler)
+    end
+end

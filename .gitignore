@@ -1,0 +1,7 @@
+.DS_Store
+*.chc
+*.gch
+*.o
+*.a
+*.tmproj
+build
