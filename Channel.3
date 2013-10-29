@@ -39,12 +39,11 @@ namespace Core::IO
         self->read_closure_ptr = three_closure_copy(handler)
 
         self->read_source.set_handler(do (Natural descriptor, Natural data) {
-            printf("Handler invoked with %u %u\n", descriptor, data)
             *Char buffer = malloc(data + 1)
-            printf("Malloced buffer %p\n", buffer)
             ssize_t bytes_read = read(descriptor, buffer, data)
 
             if bytes_read <= 0
+                free(buffer)
                 printf("failed to read?\n")
                 return
             end
