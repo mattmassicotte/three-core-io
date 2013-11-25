@@ -2,19 +2,23 @@ include "stdlib.h"
 
 namespace Core::IO
 
-    public
-    struct Data
-        *Void buffer
-        Natural size
-    end
+  public
+  struct Data
+    *Void buffer
+    Natural size
+  end
 
-    def data_create(*Void buffer, Natural size; *Data)
-        *Data data = malloc(sizeof(Data))
+  def data_create(*Void buffer, Natural size; *Data)
+    *Data data = malloc(sizeof(Data))
 
-        data->buffer = buffer
-        data->size = size
+    data->buffer = buffer
+    data->size = size
 
-        return data
-    end
+    return data
+  end
+
+  def Data.enumerate_regions(Natural offset, {Natural size, *Void buffer} closure)
+    closure(self->size, self->buffer)
+  end
 
 end

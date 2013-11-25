@@ -8,57 +8,97 @@ public
 import Data
 
 namespace Core::IO
-    public
-    enum Type
-        Stream
-        RandomAccess
-    end
 
-    public
-    struct Channel
-        Type type
-        Natural descriptor
-        *Core::Event::Source read_source
-        *{*Core::IO::Data data} read_closure_ptr
-    end
+  public
+  enum Type
+    Stream
+    RandomAccess
+  end
 
-    def channel_create(Type type, Natural descriptor; *Channel)
-        *Channel channel = malloc(sizeof(Channel))
+  public
+  struct Channel
+    Type type
+    Natural descriptor
+    *Core::Event::Source read_source
+    *{*Core::IO::Data data} read_closure_ptr
+    *Core::Event::Source write_source
+    *{} write_closure_ptr
+  end
 
-        channel->type = type
-        channel->descriptor = descriptor
-        channel->read_source = Core::Event::source_create(Core::Event::Type::Read, descriptor)
+  def channel_create(Type type, Natural descriptor; *Channel)
+    *Channel channel = malloc(sizeof(Channel))
 
-        return channel
-    end
+    channel->type = type
+    channel->descriptor = descriptor
+    channel->read_source = Core::Event::source_create(Core::Event::Type::Read, descriptor)
+    channel->write_source = Core::Event::source_create(Core::Event::Type::Write, descriptor)
 
-    def Channel.close()
-    end
+    return channel
+  end
 
-    def Channel.read(Int offset, Natural length, {*Core::IO::Data data} handler)
-        self->read_closure_ptr = three_closure_copy(handler)
+  def Channel.close()
+  end
 
-        self->read_source.set_handler(do (Natural descriptor, Natural data) {
-            *Char buffer = malloc(data + 1)
-            ssize_t bytes_read = read(descriptor, buffer, data)
+  def Channel.read(Int offset, Natural length, {*Core::IO::Data data} handler)
+    self->read_closure_ptr = three_closure_copy(handler)
 
-            if bytes_read <= 0
-                free(buffer)
-                printf("failed to read?\n")
-                return
-            end
+    self->read_source.set_handler(do (Natural descriptor, Natural data) {
+      *Char buffer = malloc(data + 1)
+      ssize_t bytes_read = read(descriptor, buffer, data)
 
-            *Core::IO::Data data_obj = Core::IO::data_create(buffer, bytes_read)
+      if bytes_read <= 0
+        free(buffer)
+        printf("failed to read?\n")
+        return
+      end
 
-            printf("About to invoke closure %p\n", self)
-            (*self->read_closure_ptr)(data_obj)
+      *Core::IO::Data data_obj = Core::IO::data_create(buffer, bytes_read)
 
-            buffer[bytes_read] = 0 // null-terminate the string
+      printf("About to invoke closure %p\n", self)
+      (*self->read_closure_ptr)(data_obj)
 
-            printf("read: %s\n", buffer)
-        })
-    end
+      buffer[bytes_read] = 0 // null-terminate the string
 
-    def Channel.write(Int offset, *Core::IO::Data data, {} handler)
-    end
+      printf("read: %s\n", buffer)
+    })
+  end
+
+  private
+  def send_data(*Core::IO::Data data, Natural descriptor)
+    // TODO: this isn't an ideal way to do this
+    data.enumerate_regions(0, do (Natural size, *Void buffer) {
+      size_t total_written = 0
+
+      loop total_written < size
+        *Void write_buffer = buffer + total_written
+        Natural buffer_size = size - total_written
+
+        ssize_t bytes_written = write(descriptor, write_buffer, buffer_size)
+
+        if bytes_written == -1
+          printf("Failed to write\n")
+          return
+        end
+
+        printf("wrote %ld bytes\n", bytes_written)
+
+        total_written += bytes_written
+      end
+    })
+  end
+
+  public
+  def Channel.write(Int offset, *Core::IO::Data write_data, {} handler)
+    self->write_closure_ptr = three_closure_copy(handler)
+
+    self->write_source.set_handler(do (Natural descriptor, Natural data) {
+      // nested closure workaround
+      Core::IO::send_data(write_data, descriptor)
+
+      (*self->write_closure_ptr)()
+
+      self->write_source.cancel()
+    })
+  end
+
 end
