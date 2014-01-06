@@ -57,7 +57,7 @@ namespace Core::IO
       printf("About to invoke closure %p\n", self)
       (*self->read_closure_ptr)(data_obj)
 
-      buffer[bytes_read] = 0 // null-terminate the string
+      buffer[bytes_read] = 0 # null-terminate the string
 
       printf("read: %s\n", buffer)
     })
@@ -65,7 +65,7 @@ namespace Core::IO
 
   private
   def send_data(*Core::IO::Data data, Natural descriptor)
-    // TODO: this isn't an ideal way to do this
+    # TODO: this isn't an ideal way to do this
     data.enumerate_regions(0, do (Natural size, *Void buffer) {
       size_t total_written = 0
 
@@ -92,7 +92,7 @@ namespace Core::IO
     self->write_closure_ptr = three_closure_copy(handler)
 
     self->write_source.set_handler(do (Natural descriptor, Natural data) {
-      // nested closure workaround
+      # nested closure workaround
       Core::IO::send_data(write_data, descriptor)
 
       (*self->write_closure_ptr)()
