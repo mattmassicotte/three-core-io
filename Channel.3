@@ -1,6 +1,7 @@
 include "stdlib.h"
 include "stdio.h"
 include "unistd.h"
+include "errno.h"
 
 import Core::Event::Source
 
@@ -50,9 +51,25 @@ namespace Core::IO
       *Char buffer = malloc(data + 1)
       ssize_t bytes_read = read(descriptor, buffer, data)
 
-      if bytes_read <= 0
+      switch bytes_read
+      case 0
         free(buffer)
-        printf("failed to read?\n")
+        printf("eof reached\n")
+        self->write_source.cancel()
+        return
+      case -1
+        free(buffer)
+        
+%if darwin
+        Int errno_value = *__error()
+        return if errno_value == 35 # EAGAIN or EWOULDBLOCK
+%else
+        Int errno_value = *__errno_location()
+        return if errno_value == 11 # EAGAIN or EWOULDBLOCK
+%end
+        printf("failed to read %d\n", errno_value)
+        self->write_source.cancel()
+
         return
       end
 
