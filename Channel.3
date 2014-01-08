@@ -33,6 +33,10 @@ namespace Core::IO
     channel->read_source = Core::Event::source_create(Core::Event::Type::Read, descriptor)
     channel->write_source = Core::Event::source_create(Core::Event::Type::Write, descriptor)
 
+    if channel->read_source == null || channel->write_source == null
+      printf("Unable to create channel read/write sources")
+    end
+
     return channel
   end
 
