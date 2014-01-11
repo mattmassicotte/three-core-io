@@ -47,6 +47,8 @@ namespace Core::IO
   def Channel.read(Int offset, Natural length, {*Core::IO::Data data} handler)
     self->read_closure_ptr = three_closure_copy(handler)
 
+    printf("[IO:Channel] %p setting read handler\n", self)
+
     self->read_source.set_handler(do (Natural descriptor, Natural data) {
       *Char buffer = malloc(data + 1)
       ssize_t bytes_read = read(descriptor, buffer, data)
@@ -82,6 +84,8 @@ namespace Core::IO
 
       printf("read: %s\n", buffer)
     })
+
+    printf("[IO:Channel] %p set read handler\n", self)
   end
 
   private
