@@ -57,20 +57,20 @@ namespace Core::IO
       case 0
         free(buffer)
         printf("eof reached\n")
-        self->write_source.cancel()
+        self->read_source.cancel()
         return
       case -1
         free(buffer)
-        
-%if darwin
-        Int errno_value = *__error()
-        return if errno_value == 35 # EAGAIN or EWOULDBLOCK
-%else
-        Int errno_value = *__errno_location()
-        return if errno_value == 11 # EAGAIN or EWOULDBLOCK
-%end
-        printf("failed to read %d\n", errno_value)
-        self->write_source.cancel()
+
+        switch errno
+        case EAGAIN
+          return
+        case EWOULDBLOCK
+          return
+        end
+
+        printf("failed to read %d\n", errno)
+        self->read_source.cancel()
 
         return
       end
