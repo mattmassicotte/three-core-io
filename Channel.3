@@ -77,7 +77,6 @@ namespace Core::IO
 
       *Core::IO::Data data_obj = Core::IO::data_create(buffer, bytes_read)
 
-      printf("About to invoke closure %p\n", self)
       (*self->read_closure_ptr)(data_obj)
 
       buffer[bytes_read] = 0 # null-terminate the string
