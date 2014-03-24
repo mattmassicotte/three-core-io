@@ -4,7 +4,6 @@ include "unistd.h"
 include "errno.h"
 
 import Core::Event::Source
-
 public
 import Data
 
@@ -79,9 +78,8 @@ namespace Core::IO
 
       (*self->read_closure_ptr)(data_obj)
 
-      buffer[bytes_read] = 0 # null-terminate the string
-
-      printf("read: %s\n", buffer)
+      #buffer[bytes_read] = 0 # null-terminate the string
+      #printf("read: %s\n", buffer)
     })
 
     printf("[IO:Channel] %p set read handler\n", self)
